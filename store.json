@@ -1,0 +1,36 @@
+[
+    {
+      "storeID": "PDV001",
+      "storeName": "PDV Recife Centro",
+      "takeOutInStore": true,
+      "shippingTimeInDays": 1,
+      "latitude": -8.047562,
+      "longitude": -34.877003,
+      "address": "Rua das Flores, 123",
+      "city": "Recife",
+      "district": "Centro",
+      "state": "PE",
+      "type": "PDV",
+      "country": "Brasil",
+      "postalCode": "50050-010",
+      "telephoneNumber": "(81) 99999-0001",
+      "emailAddress": "pdv.recife@loja.com"
+    },
+    {
+      "storeID": "LOJA001",
+      "storeName": "Loja Online Recife",
+      "takeOutInStore": true,
+      "shippingTimeInDays": 2,
+      "city": "Recife",
+      "district": "Boa Vista",
+      "state": "PE",
+      "type": "loja",
+      "country": "Brasil",
+      "telephoneNumber": "(81) 98888-0002",
+      "emailAddress": "online.recife@loja.com",
+      "associatedPDV": {
+        "storeID": "PDV001"
+      }
+    }
+  ]
+  
