@@ -6,22 +6,22 @@ export class MelhorEnvioService {
   private readonly apiKey = process.env.MELHOR_ENVIO_API_KEY;
 
   // Função para obter o tempo de entrega de um PDV dentro de 50 km
-  async getDeliveryTime(storeID: string, location: any, isWithin50km: boolean): Promise<string> {
+  async getDeliveryTime(storeID: string, location: any, isWithin50km: boolean, pdv: { postalCode: string }): Promise<string> {
     if (!isWithin50km) {
       return 'Não disponível para mais de 50 km';
     }
 
-    const url = `https://api.melhorenvio.com.br/api/v2/me/shipment/calculate`; // URL corrigida
+    const url = `https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate`; // URL corrigida
 
     const body = [
       {
         from: {
-          postal_code: 'ORIGEM_CEP_FIXO', // Substitua pelo CEP real da loja
+          postal_code: pdv.postalCode, // CEP da loja fornecido como parâmetro
         },
         to: {
           postal_code: location.postalCode,
         },
-        services: ['1'], // "1" = SEDEX
+        services: '1', // "1" = SEDEX
       }
     ];
 
@@ -45,7 +45,7 @@ export class MelhorEnvioService {
       {
         from: { postal_code: from.postalCode },
         to: { postal_code: to.postalCode },
-        services: ['1', '2'], // "1" = SEDEX, "2" = PAC
+        services: "1,2", // "1" = SEDEX, "2" = PAC
       },
     ];
 

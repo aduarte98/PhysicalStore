@@ -21,6 +21,7 @@ export class StoreService {
 
   async findByCep(cep: string) {
     const location = await this.viaCep.getCoordinatesFromCep(cep);
+    console.log('Location:', location);
     const pdvs = await this.storeModel.find({ type: 'PDV' });
 
     const response: any[] = [];
@@ -30,6 +31,7 @@ export class StoreService {
         { latitude: pdv.latitude, longitude: pdv.longitude },
         { latitude: location.latitude, longitude: location.longitude },
       );
+      console.log(`Distância para ${pdv.storeName}: ${distance.distanceInKm} km`);
 
       const isWithin50km = distance.distanceInKm <= 50;
 
@@ -38,6 +40,7 @@ export class StoreService {
           pdv.storeID,
           { ...location, postalCode: cep },
           true,
+          { postalCode: pdv.postalCode },
         );
 
         response.push({
