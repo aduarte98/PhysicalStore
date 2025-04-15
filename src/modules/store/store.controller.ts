@@ -12,7 +12,7 @@ export class StoreController {
 
   @Get('cep/:cep')
   async findByCep(@Param('cep') cep: string) {
-    return this.storeService.findByCep(cep); // Passando o CEP para o serviço que vai calcular o frete
+    return this.storeService.findByCep(cep);
   }
 
   @Get(':id')

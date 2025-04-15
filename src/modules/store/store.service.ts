@@ -59,18 +59,33 @@ export class StoreService {
           type: pdv.type,
           shippingPrice: 15,
           deliveryTime,
+          distanceInKm: distance.distanceInKm
         });
       } else {
         const loja = await this.storeModel.findOne({
-          storeID: pdv.storeID,
+          'associatedPDV.storeID': pdv.storeID,
           type: 'loja',
         });
 
+        console.log(loja)
+
         if (loja) {
-          const shippingMethods = await this.melhorEnvio.getFreteFromLoja(
-            loja,
-            { ...location, postalCode: cep },
-          );
+          const pdvAssociada = await this.storeModel.findOne({
+            storeID: loja.associatedPDV?.storeID,
+            type: 'PDV',
+          });
+
+          console.log('PDV Associada:', pdvAssociada);
+
+          let shippingMethods: { apac?: { price: any; deliveryTime: any }; sedex?: { price: any; deliveryTime: any } } | null = null;
+          if (pdvAssociada) {
+            shippingMethods = await this.melhorEnvio.getFreteFromLoja(
+              { postalCode: pdvAssociada.postalCode },
+              { postalCode: cep },
+            );
+          }
+
+          console.log('Shipping Methods:', shippingMethods);
 
           response.push({
             storeID: loja.storeID,
@@ -87,12 +102,13 @@ export class StoreService {
             longitude: loja.longitude,
             type: loja.type,
             shippingMethods,
+            distanceInKm: distance.distanceInKm
           });
         }
       }
     }
 
-    return response;
+    return response.sort((a, b) => a.distanceInKm - b.distanceInKm);;
   }
 
   async getStoreById(id: string) {

@@ -1,0 +1,102 @@
+[
+    {
+      "storeID": "PDV002",
+      "storeName": "PDV São Paulo Centro",
+      "takeOutInStore": true,
+      "shippingTimeInDays": 1,
+      "latitude": -23.55052,
+      "longitude": -46.633308,
+      "address": "Avenida Paulista, 1000",
+      "city": "São Paulo",
+      "district": "Bela Vista",
+      "state": "SP",
+      "type": "PDV",
+      "country": "Brasil",
+      "postalCode": "01310-100",
+      "telephoneNumber": "(11) 98888-0002",
+      "emailAddress": "pdv.sp@loja.com"
+    },
+    {
+      "storeID": "LOJA002",
+      "storeName": "Loja Online São Paulo",
+      "takeOutInStore": true,
+      "shippingTimeInDays": 2,
+      "city": "São Paulo",
+      "district": "Liberdade",
+      "state": "SP",
+      "type": "loja",
+      "country": "Brasil",
+      "telephoneNumber": "(11) 97777-0002",
+      "emailAddress": "online.sp@loja.com",
+      "associatedPDV": {
+        "storeID": "PDV002"
+      }
+    },
+    {
+      "storeID": "PDV003",
+      "storeName": "PDV Salvador Centro",
+      "takeOutInStore": true,
+      "shippingTimeInDays": 1,
+      "latitude": -12.9714,
+      "longitude": -38.5014,
+      "address": "Praça da Sé, 200",
+      "city": "Salvador",
+      "district": "Centro Histórico",
+      "state": "BA",
+      "type": "PDV",
+      "country": "Brasil",
+      "postalCode": "40020-210",
+      "telephoneNumber": "(71) 98888-0003",
+      "emailAddress": "pdv.salvador@loja.com"
+    },
+    {
+      "storeID": "LOJA003",
+      "storeName": "Loja Online Salvador",
+      "takeOutInStore": true,
+      "shippingTimeInDays": 2,
+      "city": "Salvador",
+      "district": "Barra",
+      "state": "BA",
+      "type": "loja",
+      "country": "Brasil",
+      "telephoneNumber": "(71) 97777-0003",
+      "emailAddress": "online.salvador@loja.com",
+      "associatedPDV": {
+        "storeID": "PDV003"
+      }
+    },
+    {
+      "storeID": "PDV004",
+      "storeName": "PDV Porto Alegre Centro",
+      "takeOutInStore": true,
+      "shippingTimeInDays": 1,
+      "latitude": -30.0277,
+      "longitude": -51.2287,
+      "address": "Rua dos Andradas, 500",
+      "city": "Porto Alegre",
+      "district": "Centro",
+      "state": "RS",
+      "type": "PDV",
+      "country": "Brasil",
+      "postalCode": "90020-005",
+      "telephoneNumber": "(51) 98888-0004",
+      "emailAddress": "pdv.poa@loja.com"
+    },
+    {
+      "storeID": "LOJA004",
+      "storeName": "Loja Online Porto Alegre",
+      "takeOutInStore": true,
+      "shippingTimeInDays": 2,
+      "city": "Porto Alegre",
+      "district": "Moinhos de Vento",
+      "state": "RS",
+      "type": "loja",
+      "country": "Brasil",
+      "telephoneNumber": "(51) 97777-0004",
+      "emailAddress": "online.poa@loja.com",
+      "associatedPDV": {
+        "storeID": "PDV004"
+      }
+    }
+  ]
+  

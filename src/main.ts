@@ -9,7 +9,6 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // Validação global
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -18,7 +17,6 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger
   const config = new DocumentBuilder()
     .setTitle('API - Physical Store')
     .setDescription('Documentação dos endpoints da sua aplicação')
@@ -26,9 +24,8 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document); // Acesse em http://localhost:3000/api
+  SwaggerModule.setup('api', app, document);
 
-  // Porta do servidor
   const PORT = process.env.PORT || 3000;
   await app.listen(PORT);
   console.log(`🚀 Server is running on http://localhost:${PORT}`);

@@ -12,7 +12,6 @@ export class ViaCepService {
       throw new Error('CEP inválido. Certifique-se de que contém 8 dígitos numéricos.');
     }
 
-    // Consulta ao ViaCEP para pegar o endereço
     const url = `${this.apiUrl}${sanitizedCep}/json/`;
     const { data } = await axios.get(url);
 
@@ -20,10 +19,8 @@ export class ViaCepService {
       throw new Error('CEP inválido.');
     }
 
-    // Monta o endereço completo
     const address = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}, Brasil`;
 
-    // Faz geocodificação usando Nominatim (OpenStreetMap)
     const response = await axios.get(this.nominatimUrl, {
       params: {
         q: address,
@@ -32,7 +29,7 @@ export class ViaCepService {
         limit: 1,
       },
       headers: {
-        'User-Agent': 'MinhaAplicacao (seu-email@dominio.com)', // Nominatim exige esse cabeçalho
+        'User-Agent': 'MinhaAplicacao (seu-email@dominio.com)',
       },
     });
 

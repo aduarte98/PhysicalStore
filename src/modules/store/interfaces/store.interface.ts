@@ -2,27 +2,24 @@ import { Document } from 'mongoose';
 
 export interface ShippingMethods {
   apac: {
-    price: number; // Preço do frete via APAC
-    deliveryTime: string; // Prazo de entrega via APAC
+    price: number;
+    deliveryTime: string;
   };
   sedex: {
-    price: number; // Preço do frete via SEDEX
-    deliveryTime: string; // Prazo de entrega via SEDEX
+    price: number;
+    deliveryTime: string;
   };
 }
 
 export interface Store extends Document {
-  storeID: string; // Identificador único da loja (PDV ou loja online)
+  storeID: string;
   storeName: string;
   takeOutInStore: boolean;
   shippingTimeInDays: number;
-
-  type: 'PDV' | 'loja'; // Tipo de loja: PDV ou loja online
-
+  type: 'PDV' | 'loja';
   latitude: number;
   longitude: number;
   address: string;
-
   city: string;
   district: string;
   state: string;
@@ -30,14 +27,13 @@ export interface Store extends Document {
   postalCode: string;
   telephoneNumber: string;
   emailAddress: string;
-
-  shippingMethods?: ShippingMethods; // Métodos de envio, apenas para lojas online (não PDV)
-  associatedPDV?: Store; // Referência à PDV associada para lojas online
+  shippingMethods?: ShippingMethods;
+  associatedPDV?: Store;
 }
 
 export interface StoreResponse {
-  price: number; // Preço do frete
-  deliveryTime: string; // Prazo de entrega
-  shippingMethods?: ShippingMethods; // Métodos de envio para loja online com mais de 50km
-  storeID: string; // Identificador único da loja associado ao frete
+  price: number;
+  deliveryTime: string;
+  shippingMethods?: ShippingMethods;
+  storeID: string;
 }

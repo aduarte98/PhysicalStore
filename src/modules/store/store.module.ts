@@ -14,12 +14,12 @@ import { HttpModule } from '@nestjs/axios';
     HttpModule,
   ],
   providers: [
-    StoreService, // Serviço responsável pela lógica de negócios da loja
-    MapsService, // Serviço para obter distância entre coordenadas
-    MelhorEnvioService, // Serviço para calcular frete e prazo de entrega
-    ViaCepService, // Serviço para obter coordenadas a partir do CEP
+    StoreService,
+    MapsService,
+    MelhorEnvioService,
+    ViaCepService,
   ],
-  controllers: [StoreController], // Controlador responsável pelas rotas
-  exports: [StoreService], // Exportando o serviço caso seja necessário em outros módulos
+  controllers: [StoreController],
+  exports: [StoreService],
 })
 export class StoreModule {}

@@ -26,8 +26,8 @@ export class MapsService {
     const distanceInMeters = data.rows[0].elements[0].distance.value;
     const distanceInKm = distanceInMeters / 1000;
 
-    const latitude = data.origin_addresses[0]; // Replace with actual latitude extraction logic
-    const longitude = data.destination_addresses[0]; // Replace with actual longitude extraction logic
+    const latitude = data.origin_addresses[0];
+    const longitude = data.destination_addresses[0];
 
     return {
       origin,
