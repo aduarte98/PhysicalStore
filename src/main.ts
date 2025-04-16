@@ -3,32 +3,41 @@ import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { logger } from './utils/logger';
+
 
 async function bootstrap() {
-  dotenv.config();
+  try {
+    dotenv.config();
 
-  const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule);
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
+    logger.info('🚀 Servidor iniciado');
 
-  const config = new DocumentBuilder()
-    .setTitle('API - Physical Store')
-    .setDescription('Documentação dos endpoints da sua aplicação')
-    .setVersion('1.0')
-    .build();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+    const config = new DocumentBuilder()
+      .setTitle('API - Physical Store')
+      .setDescription('Documentação da API de frete e lojas')
+      .setVersion('1.0')
+      .build();
 
-  const PORT = process.env.PORT || 3000;
-  await app.listen(PORT);
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`📘 Swagger docs available at http://localhost:${PORT}/api`);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document);
+
+    const PORT = process.env.PORT || 3000;
+    await app.listen(PORT);
+    logger.info(`✅ Aplicação escutando na porta ${PORT}`);
+  } catch (error) {
+    logger.error('❌ Erro ao iniciar a aplicação:', error);
+    process.exit(1); // encerra o processo com erro
+  }
 }
+
 bootstrap();
