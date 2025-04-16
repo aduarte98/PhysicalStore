@@ -1,17 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RouterProjectService } from '../src/modules/shipping/maps.service';
+import { MapsService } from '../src/modules/shipping/maps.service';
 import { HttpService } from '@nestjs/axios';
 import { of, throwError } from 'rxjs';
 import { logger } from '../src/utils/logger';
 
 describe('RouterProjectService', () => {
-  let service: RouterProjectService;
+  let service: MapsService;
   let httpService: HttpService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        RouterProjectService,
+        MapsService,
         {
           provide: HttpService,
           useValue: {
@@ -21,7 +21,7 @@ describe('RouterProjectService', () => {
       ],
     }).compile();
 
-    service = module.get<RouterProjectService>(RouterProjectService);
+    service = module.get<MapsService>(MapsService);
     httpService = module.get<HttpService>(HttpService);
   });
 
@@ -31,10 +31,11 @@ describe('RouterProjectService', () => {
 
     const mockResponse = {
       data: {
+        code: 'Ok',
         routes: [
           {
-            distance: 10000, // em metros
-            duration: 900, // em segundos
+            distance: 10000, // metros
+            duration: 900,   // segundos
           },
         ],
       },
@@ -46,8 +47,11 @@ describe('RouterProjectService', () => {
     logger.info('Resultado do router.project:', result);
 
     expect(result).toEqual({
+      origin: '-8.0476,-34.877',
+      destination: '-8.052,-34.9',
       distanceInKm: 10,
-      durationInMin: 15,
+      latitude: -8.0476,
+      longitude: -34.877,
     });
   });
 
@@ -55,11 +59,11 @@ describe('RouterProjectService', () => {
     const origem = { latitude: -8.0476, longitude: -34.877 };
     const destino = { latitude: -8.052, longitude: -34.9 };
 
-    jest
-      .spyOn(httpService, 'get')
-      .mockReturnValue(throwError(() => new Error('Erro ao obter rota')));
+    jest.spyOn(httpService, 'get').mockReturnValue(
+      throwError(() => new Error('Erro ao obter rota'))
+    );
 
-    await expect(service.getDistanceBetween(origem, destino)).rejects.toThrow('Erro ao obter rota');
+    await expect(service.getDistanceBetween(origem, destino)).rejects.toThrow('Erro ao obter distância');
     logger.error('Erro simulado na chamada ao router.project');
   });
 });

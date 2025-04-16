@@ -54,7 +54,7 @@ export class MelhorEnvioService {
       return deliveryTime;
     } catch (error) {
       logger.error(`❌ Erro ao calcular prazo de entrega (StoreID: ${storeID}): ${error.message}`);
-      throw new InternalServerErrorException('Erro ao obter prazo de entrega com Melhor Envio');
+      throw new InternalServerErrorException('Erro no Melhor Envio');
     }
   }
 
@@ -109,7 +109,7 @@ export class MelhorEnvioService {
       return { apac, sedex };
     } catch (error) {
       logger.error(`❌ Erro ao calcular frete com Melhor Envio: ${error.message}`);
-      throw new InternalServerErrorException('Erro ao obter frete com Melhor Envio');
+      throw new InternalServerErrorException('Erro no Melhor Envio');
     }
   }
 }

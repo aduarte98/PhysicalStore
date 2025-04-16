@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ViaCepService } from '../src/modules/cep/viacep.service';
 import { HttpService } from '@nestjs/axios';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { AxiosResponse } from 'axios';
 import { logger } from '../src/utils/logger';
 
 describe('ViaCepService', () => {
@@ -26,30 +27,47 @@ describe('ViaCepService', () => {
   });
 
   it('deve retornar as coordenadas de um CEP válido', async () => {
-    const mockResponse = {
-      data: {
-        results: [{
-          geometry: {
-            location: {
-              lat: -8.047562,
-              lng: -34.877003,
-            },
+    jest.spyOn(httpService, 'get')
+      .mockImplementationOnce(() =>
+        of({
+          data: {
+            localidade: 'Recife',
+            uf: 'PE',
           },
-        }],
-      },
-    };
-
-    jest.spyOn(httpService, 'get').mockReturnValue(of(mockResponse as any));
+          status: 200,
+        } as AxiosResponse)
+      )
+      .mockImplementationOnce(() =>
+        of({
+          data: {
+            lat: '-8.047562',
+            lon: '-34.877003',
+          },
+          status: 200,
+        } as AxiosResponse)
+      );
 
     const result = await service.getCoordinatesFromCep('50050-010');
     logger.info('Resultado da localização ViaCEP', result);
     expect(result).toEqual({ latitude: -8.047562, longitude: -34.877003 });
   });
 
-  it('deve lançar erro para CEP inválido', async () => {
-    const mockError = { data: { results: [] } };
-    jest.spyOn(httpService, 'get').mockReturnValue(of(mockError as any));
+  it('deve lançar erro para CEP inválido ou resposta inesperada', async () => {
+    jest.spyOn(httpService, 'get').mockReturnValue(
+      of({
+        data: {}, // Resposta inesperada
+        status: 200,
+      } as AxiosResponse)
+    );
 
-    await expect(service.getCoordinatesFromCep('00000-000')).rejects.toThrow();
+    await expect(service.getCoordinatesFromCep('00000-000')).rejects.toThrow('Erro ao buscar coordenadas para o CEP.');
+  });
+
+  it('deve lançar erro para falha na API do ViaCEP', async () => {
+    jest.spyOn(httpService, 'get').mockReturnValue(
+      throwError(() => new Error('Erro ao chamar a API do ViaCEP'))
+    );
+
+    await expect(service.getCoordinatesFromCep('00000-000')).rejects.toThrow('Erro ao buscar coordenadas para o CEP.');
   });
 });

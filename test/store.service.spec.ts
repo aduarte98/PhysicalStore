@@ -58,7 +58,9 @@ describe('StoreService', () => {
         latitude: -8.1,
         longitude: -34.8,
         type: 'PDV',
-        address: { postalCode: '50000-000' }
+        postalCode: '50000-000',
+        storeName: 'PDV Teste',
+        city: 'Recife'
       }
     ]);
 
@@ -69,8 +71,8 @@ describe('StoreService', () => {
     logger.info('Resultado com PDV próximo: ', response);
 
     expect(response).toBeDefined();
-    expect(response[0]?.shippingPrice).toBe(15);
-    expect(response[0]?.deliveryTime).toBe(2);
+    expect(response![0]?.value?.[0]?.price).toBe('R$ 15,00');
+    expect(response![0]?.value?.[0]?.prazo).toBe('2 dias úteis');
   });
 
   it('deve retornar loja com frete do Melhor Envio para PDV distante', async () => {
@@ -86,26 +88,39 @@ describe('StoreService', () => {
         latitude: -9.0,
         longitude: -35.9,
         type: 'PDV',
-        address: { postalCode: '60000-000' }
+        postalCode: '60000-000',
+        storeName: 'PDV Distante',
+        city: 'Maceió'
       }
     ]);
 
     mockMapsService.getDistanceBetween.mockResolvedValue({ distanceInKm: 100 });
 
-    mockStoreModel.findOne.mockResolvedValue({
+    mockStoreModel.findOne.mockResolvedValueOnce({
       storeID: 'LOJA001',
       type: 'loja',
+      storeName: 'Loja Online',
+      city: 'Maceió',
+      postalCode: '60000-000',
+      associatedPDV: { storeID: 'PDV001' }
     });
 
-    mockMelhorEnvio.getFreteFromLoja.mockResolvedValue([
-      { name: 'PAC', price: 20, prazo_entrega: 5 }
-    ]);
+    mockStoreModel.findOne.mockResolvedValueOnce({
+      storeID: 'PDV001',
+      type: 'PDV',
+      postalCode: '60000-000'
+    });
+
+    mockMelhorEnvio.getFreteFromLoja.mockResolvedValue({
+      sedex: { price: 25.5, deliveryTime: 3 },
+      apac: { price: 20.0, deliveryTime: 5 }
+    });
 
     const response = await service.findByCep('50050-010');
     logger.info('Resultado com loja online por PDV distante: ', response);
 
     expect(response).toBeDefined();
-    expect(response[0]?.shippingMethods?.[0]?.name).toBe('PAC');
-    expect(response[0]?.shippingMethods?.[0]?.price).toBe(20);
+    expect(response![0]?.value?.[1]?.description).toContain('PAC');
+    expect(response![0]?.value?.[1]?.price).toBe('R$ 20,00');
   });
 });

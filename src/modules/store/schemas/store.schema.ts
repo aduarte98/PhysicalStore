@@ -32,26 +32,3 @@ export const StoreSchema = new Schema(
   },
   { timestamps: true },
 );
-
-export interface Store extends Document {
-  storeID: string;
-  storeName: string;
-  takeOutInStore: boolean;
-  shippingTimeInDays: number;
-  latitude: string;
-  longitude: string;
-  address: string;
-  city: string;
-  district: string;
-  state: string;
-  type: 'PDV' | 'LOJA';
-  country: string;
-  postalCode: string;
-  telephoneNumber: string;
-  emailAddress: string;
-  shippingMethods?: {
-    apac: { price: number; deliveryTime: string };
-    sedex: { price: number; deliveryTime: string };
-  };
-  associatedPDV?: Store;
-}

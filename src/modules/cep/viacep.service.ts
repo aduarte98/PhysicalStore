@@ -52,6 +52,7 @@ export class ViaCepService {
       };
     } catch (error) {
       logger.error(`🔥 Erro ao buscar coordenadas para o CEP ${cep}: ${error.message}`);
+      throw new InternalServerErrorException('Erro ao buscar coordenadas para o CEP.');
     }
   }
 }
