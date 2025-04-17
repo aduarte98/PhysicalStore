@@ -44,6 +44,7 @@ export class StoreController {
     description: 'Retorna lojas localizadas no estado fornecido',
   })
   getByState(@Param('state') state: string) {
-    return this.storeService.getStoresByState(state);
+    const normalizedState = state.toUpperCase();
+    return this.storeService.getStoresByState(normalizedState);
   }
 }
