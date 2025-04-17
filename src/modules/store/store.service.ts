@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import { Store } from '../store/interfaces/store.interface';
 import { MapsService } from '../shipping/maps.service';
 import { MelhorEnvioService } from '../shipping/melhorenvio.service';
@@ -21,22 +21,22 @@ export class StoreService {
   }
 
   async findByCep(cep: string) {
-    try{
+    try {
       logger.info(`🔎 Iniciando busca por lojas próximas ao CEP ${cep}`);
 
       const location = await this.viaCep.getCoordinatesFromCep(cep);
       const pdvs = await this.storeModel.find({ type: 'PDV' });
-    
+
       const response: any[] = [];
-    
+
       for (const pdv of pdvs) {
         const distance = await this.mapsService.getDistanceBetween(
           { latitude: pdv.latitude, longitude: pdv.longitude },
           { latitude: location.latitude, longitude: location.longitude },
         );
-    
+
         const isWithin50km = distance.distanceInKm <= 50;
-    
+
         if (isWithin50km) {
           const deliveryTime = await this.melhorEnvio.getDeliveryTime(
             pdv.storeID,
@@ -44,7 +44,7 @@ export class StoreService {
             true,
             { postalCode: pdv.postalCode },
           );
-    
+
           response.push({
             name: pdv.storeName,
             city: pdv.city,
@@ -67,13 +67,13 @@ export class StoreService {
             'associatedPDV.storeID': pdv.storeID,
             type: 'loja',
           });
-    
+
           if (loja) {
             const pdvAssociada = await this.storeModel.findOne({
               storeID: loja.associatedPDV?.storeID,
               type: 'PDV',
             });
-    
+
             let shippingMethods: { apac?: { price: any; deliveryTime: any }; sedex?: { price: any; deliveryTime: any } } | null = null;
             if (pdvAssociada) {
               shippingMethods = await this.melhorEnvio.getFreteFromLoja(
@@ -81,7 +81,7 @@ export class StoreService {
                 { postalCode: cep },
               );
             }
-    
+
             if (shippingMethods?.sedex && shippingMethods?.apac) {
               response.push({
                 name: loja.storeName,
@@ -119,16 +119,48 @@ export class StoreService {
         .sort((a, b) => a.rawDistance - b.rawDistance)
         .map(({ rawDistance, ...rest }) => rest);
 
-    }catch (error) {
+    } catch (error) {
       logger.error(`❌ Erro na busca por lojas com base no CEP ${cep}: ${error.message}`);
+      throw error;
     }
   }
-  
+
   async getStoreById(id: string) {
-    return this.storeModel.findById(id);
+    if (!isValidObjectId(id)) {
+      logger.warn(`⚠️ ID de loja inválido: ${id}`);
+      throw new BadRequestException('O ID fornecido não é válido.');
+    }
+
+    const store = await this.storeModel.findById(id);
+
+    if (!store) {
+      logger.warn(`⚠️ Loja não encontrada para o ID: ${id}`);
+      throw new NotFoundException('Loja não encontrada.');
+    }
+
+    logger.info(`✅ Loja encontrada: ${store.storeName}`);
+    return store;
   }
 
   async getStoresByState(state: string) {
-    return this.storeModel.find({ state });
+    const normalizedState = state.toUpperCase();
+    if (normalizedState.length !== 2) {
+      logger.warn(`⚠️ Código de estado inválido: ${state}`);
+      throw new BadRequestException(
+        'Código do estado inválido. Use exatamente 2 letras (ex: PE, RJ, SP).',
+      );
+    }
+
+    const stores = await this.storeModel.find({ state: normalizedState });
+
+    if (!stores || stores.length === 0) {
+      logger.warn(`⚠️ Nenhuma loja encontrada para o estado: ${normalizedState}`);
+      throw new NotFoundException(
+        `Nenhuma loja encontrada para o estado ${normalizedState}.`,
+      );
+    }
+
+    logger.info(`✅ ${stores.length} lojas encontradas para o estado ${normalizedState}`);
+    return stores;
   }
 }

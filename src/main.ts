@@ -36,7 +36,7 @@ async function bootstrap() {
     logger.info(`✅ Aplicação escutando na porta ${PORT}`);
   } catch (error) {
     logger.error('❌ Erro ao iniciar a aplicação:', error);
-    process.exit(1); // encerra o processo com erro
+    process.exit(1);
   }
 }
 

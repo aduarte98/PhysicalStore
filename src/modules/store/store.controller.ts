@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { StoreService } from '../store/store.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 
 @ApiTags('Stores')
 @Controller('store')
@@ -39,12 +39,16 @@ export class StoreController {
 
   @Get('state/:state')
   @ApiOperation({ summary: 'Obter lojas por estado' })
+  @ApiParam({
+    name: 'state',
+    description: 'Código do estado (2 letras, como PE, RJ, SP, etc.)',
+    example: 'PE',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Retorna lojas localizadas no estado fornecido',
+    description: 'Retorna lojas localizadas no estado fornecido. Use o código do estado com 2 letras (exemplo: PE, RJ, SP)',
   })
   getByState(@Param('state') state: string) {
-    const normalizedState = state.toUpperCase();
-    return this.storeService.getStoresByState(normalizedState);
+    return this.storeService.getStoresByState(state);
   }
 }

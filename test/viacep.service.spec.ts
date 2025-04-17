@@ -46,20 +46,18 @@ describe('ViaCepService', () => {
   });
 
   it('deve lançar erro para CEP inválido ou resposta inesperada', async () => {
-    mockedAxios.get.mockResolvedValueOnce({
-      data: { erro: true }, // Simula resposta do ViaCEP com erro
-    });
-
+    mockedAxios.get.mockResolvedValue({ data: { erro: true } });
+  
     await expect(service.getCoordinatesFromCep('00000-000')).rejects.toThrow(
-      'Erro ao buscar coordenadas para o CEP.',
+      'CEP 00000000 não encontrado.',
     );
   });
-
+  
   it('deve lançar erro para falha na API do ViaCEP', async () => {
     mockedAxios.get.mockRejectedValue(new Error('Erro ao chamar a API do ViaCEP'));
-
+  
     await expect(service.getCoordinatesFromCep('00000-000')).rejects.toThrow(
       'Erro ao buscar coordenadas para o CEP.',
     );
-  });
+  });  
 });
