@@ -20,16 +20,16 @@ describe('MelhorEnvioService', () => {
     mockedAxios.post.mockResolvedValueOnce({
       data: [
         { delivery_time: '1 dia' },
-        { delivery_time: '2 dias' }, // SEDEX
+        { delivery_time: '2 dias' },
       ],
     });
 
     const delivery = await service.getDeliveryTime(
       'PDV001',
-      { latitude: -8.05, longitude: -34.9, postalCode: '50000-000' },
-      true,
+      '50000-000',
       { postalCode: '50000-000' }
     );
+    
 
     expect(delivery).toBe('2 dias');
   });
@@ -40,14 +40,10 @@ describe('MelhorEnvioService', () => {
     await expect(
       service.getDeliveryTime(
         'PDV001',
-        {
-          latitude: -8.0,
-          longitude: -34.8,
-          postalCode: '57051-090',
-        },
-        true,
+        '57051-090',
         { postalCode: '57051-090' }
       )
     ).rejects.toThrow('Erro no Melhor Envio');
+    
   });
 });

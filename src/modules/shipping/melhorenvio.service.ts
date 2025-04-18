@@ -8,15 +8,14 @@ export class MelhorEnvioService {
 
   async getDeliveryTime(
     storeID: string,
-    location: any,
-    isWithin50km: boolean,
+    sanitizedCep: string,
     pdv: { postalCode: string }
   ): Promise<string> {
     const url = `https://melhorenvio.com.br/api/v2/me/shipment/calculate`;
 
     const body = {
       from: { postal_code: pdv.postalCode },
-      to: { postal_code: location.postalCode },
+      to: { postal_code: sanitizedCep },
       products: [
         {
           id: "1",

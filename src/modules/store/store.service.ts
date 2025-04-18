@@ -24,24 +24,37 @@ export class StoreService {
     try {
       logger.info(`🔎 Iniciando busca por lojas próximas ao CEP ${cep}`);
 
-      const location = await this.viaCep.getCoordinatesFromCep(cep);
+      const enderecoResponse = await this.viaCep.getAddressFromCep(cep);
+      if (typeof enderecoResponse !== 'object' || !enderecoResponse) {
+        throw new BadRequestException('Endereço inválido retornado pelo ViaCEP.');
+      }
+      const endereco = enderecoResponse as { logradouro: string, bairro: string, localidade: string, uf: string };
+      logger.info(`📍 Endereço encontrado: ${endereco.logradouro}, ${endereco.bairro}, ${endereco.localidade}, ${endereco.uf}`);
+
       const pdvs = await this.storeModel.find({ type: 'PDV' });
 
       const response: any[] = [];
 
       for (const pdv of pdvs) {
-        const distance = await this.mapsService.getDistanceBetween(
-          { latitude: pdv.latitude, longitude: pdv.longitude },
-          { latitude: location.latitude, longitude: location.longitude },
-        );
+        if (!pdv.address || !pdv.city || !pdv.state) {
+          logger.warn(`⚠️ PDV ${pdv.storeName} não possui endereço completo definido.`);
+          continue;
+        }
+        
+
+        const origem = `${endereco.logradouro}, ${endereco.bairro}, ${endereco.localidade}, ${endereco.uf}`;
+        const destino = `${pdv.address}, ${pdv.city}, ${pdv.state}`;
+
+        const distance = await this.mapsService.getDistanceBetween(origem, destino);
 
         const isWithin50km = distance.distanceInKm <= 50;
+
+        const sanitizedCep = cep.replace(/\D/g, '');
 
         if (isWithin50km) {
           const deliveryTime = await this.melhorEnvio.getDeliveryTime(
             pdv.storeID,
-            { ...location, postalCode: cep },
-            true,
+            sanitizedCep,
             { postalCode: pdv.postalCode },
           );
 
@@ -78,7 +91,7 @@ export class StoreService {
             if (pdvAssociada) {
               shippingMethods = await this.melhorEnvio.getFreteFromLoja(
                 { postalCode: pdvAssociada.postalCode },
-                { postalCode: cep },
+                { postalCode: sanitizedCep },
               );
             }
 

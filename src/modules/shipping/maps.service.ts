@@ -1,4 +1,7 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { DistanceResult } from './interfaces/distance.interface';
@@ -6,40 +9,58 @@ import { logger } from '../../utils/logger';
 
 @Injectable()
 export class MapsService {
+  private readonly apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
   constructor(private readonly httpService: HttpService) {}
 
   async getDistanceBetween(
-    origin: { latitude: number; longitude: number },
-    destination: { latitude: number; longitude: number }
+    originAddress: string,
+    destinationAddress: string
   ): Promise<DistanceResult> {
-    const coordinates = `${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}`;
-    const url = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=false`;
+    const url = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 
     try {
-      logger.info(`📏 Calculando distância entre (${origin.latitude}, ${origin.longitude}) e (${destination.latitude}, ${destination.longitude})`);
+      logger.info(`📏 Calculando distância entre "${originAddress}" e "${destinationAddress}"`);
 
-      const { data } = await firstValueFrom(this.httpService.get(url));
+      const { data } = await firstValueFrom(
+        this.httpService.post(
+          url,
+          {
+            origin: {
+              address: originAddress
+            },
+            destination: {
+              address: destinationAddress
+            },
+            travelMode: 'DRIVE'
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Goog-Api-Key': this.apiKey,
+              'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters'
+            }
+          }
+        )
+      );
 
-      if (!data || data.code !== 'Ok') {
-        logger.error(`❌ Erro ao calcular distância com OSRM: Resposta inválida`);
-        throw new Error('Erro ao calcular distância com OSRM');
+      const route = data.routes?.[0];
+      if (!route || !route.distanceMeters) {
+        logger.error('❌ Erro ao calcular distância: rota não encontrada', data);
+        throw new Error('Erro ao calcular distância: rota inválida.');
       }
 
-      const distanceInMeters = data.routes[0].distance;
-      const distanceInKm = distanceInMeters / 1000;
-
+      const distanceInKm = route.distanceMeters / 1000;
       logger.info(`✅ Distância calculada: ${distanceInKm.toFixed(2)} km`);
 
       return {
-        origin: `${origin.latitude},${origin.longitude}`,
-        destination: `${destination.latitude},${destination.longitude}`,
-        distanceInKm,
-        latitude: origin.latitude,
-        longitude: origin.longitude,
+        origin: originAddress,
+        destination: destinationAddress,
+        distanceInKm
       };
     } catch (error) {
-      logger.error(`🔥 Erro ao obter distância com OSRM: ${error.message}`);
-      throw new InternalServerErrorException('Erro ao obter distância. Tente novamente mais tarde.');
+      logger.error(`🔥 Erro ao calcular distância com Google Routes API: ${error.message}`);
+      throw new InternalServerErrorException('Erro ao calcular distância.');
     }
   }
 }

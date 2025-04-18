@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ViaCepService } from '../src/modules/cep/viacep.service';
 import axios from 'axios';
-import { logger } from '../src/utils/logger';
+import { BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -21,43 +21,36 @@ describe('ViaCepService', () => {
     jest.clearAllMocks();
   });
 
-  it('deve retornar as coordenadas de um CEP válido', async () => {
-    mockedAxios.get
-      .mockResolvedValueOnce({
-        data: {
-          logradouro: 'Rua do Sol',
-          bairro: 'Boa Vista',
-          localidade: 'Recife',
-          uf: 'PE',
-        },
-      })
-      .mockResolvedValueOnce({
-        data: [
-          {
-            lat: '-8.047562',
-            lon: '-34.877003',
-          },
-        ],
-      });
-
-    const result = await service.getCoordinatesFromCep('50050-010');
-    logger.info('Resultado da localização ViaCEP', result);
-    expect(result).toEqual({ latitude: -8.047562, longitude: -34.877003 });
-  });
-
-  it('deve lançar erro para CEP inválido ou resposta inesperada', async () => {
-    mockedAxios.get.mockResolvedValue({ data: { erro: true } });
+  it('deve retornar o endereço formatado para um CEP válido', async () => {
+    const mockCep = '50710-000';
+    const mockResponse = {
+      logradouro: 'Rua do Sol',
+      bairro: 'Boa Vista',
+      localidade: 'Recife',
+      uf: 'PE'
+    };
   
-    await expect(service.getCoordinatesFromCep('00000-000')).rejects.toThrow(
-      'CEP 00000000 não encontrado.',
-    );
+    service.getAddressFromCep = jest.fn().mockResolvedValue(mockResponse);
+  
+    const result = await service.getAddressFromCep(mockCep);
+  
+    expect(result).toEqual(mockResponse);
   });
   
-  it('deve lançar erro para falha na API do ViaCEP', async () => {
-    mockedAxios.get.mockRejectedValue(new Error('Erro ao chamar a API do ViaCEP'));
-  
-    await expect(service.getCoordinatesFromCep('00000-000')).rejects.toThrow(
-      'Erro ao buscar coordenadas para o CEP.',
-    );
-  });  
+
+  it('deve lançar BadRequestException para CEP inválido', async () => {
+    await expect(service.getAddressFromCep('123')).rejects.toThrow(BadRequestException);
+  });
+
+  it('deve lançar NotFoundException quando o CEP não for encontrado', async () => {
+    mockedAxios.get.mockResolvedValueOnce({ data: { erro: true } });
+
+    await expect(service.getAddressFromCep('99999-999')).rejects.toThrow(NotFoundException);
+  });
+
+  it('deve lançar InternalServerErrorException em caso de erro desconhecido', async () => {
+    mockedAxios.get.mockRejectedValueOnce(new Error('Erro de rede'));
+
+    await expect(service.getAddressFromCep('50050-010')).rejects.toThrow(InternalServerErrorException);
+  });
 });

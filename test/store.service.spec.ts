@@ -4,190 +4,174 @@ import { getModelToken } from '@nestjs/mongoose';
 import { MapsService } from '../src/modules/shipping/maps.service';
 import { MelhorEnvioService } from '../src/modules/shipping/melhorenvio.service';
 import { ViaCepService } from '../src/modules/cep/viacep.service';
-import { logger } from '../src/utils/logger';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+
+const mockStoreModel = () => ({
+  find: jest.fn(),
+  findById: jest.fn(),
+  findOne: jest.fn(),
+});
+
+const mockMapsService = () => ({
+  getDistanceBetween: jest.fn().mockImplementation(() => Promise.resolve({ distanceInKm: 10 })),
+});
+
+const mockMelhorEnvioService = () => ({
+  getDeliveryTime: jest.fn().mockResolvedValue('2 dias úteis'),
+  getFreteFromLoja: jest.fn().mockImplementation(() => 
+    Promise.resolve({
+      sedex: { price: 23.5, deliveryTime: 2 },
+      apac: { price: 19.9, deliveryTime: 4 },
+    })
+  ),
+});
+
+const mockViaCepService = () => ({
+  getAddressFromCep: jest.fn().mockResolvedValue(''),
+});
 
 describe('StoreService', () => {
   let service: StoreService;
-
-  const mockStoreModel = {
-    find: jest.fn(),
-    findOne: jest.fn(),
-    findById: jest.fn(),
-  };
-
-  const mockMapsService = {
-    getDistanceBetween: jest.fn(),
-  };
-
-  const mockMelhorEnvio = {
-    getDeliveryTime: jest.fn(),
-    getFreteFromLoja: jest.fn(),
-  };
-
-  const mockViaCep = {
-    getCoordinatesFromCep: jest.fn(),
-  };
+  let storeModel: any;
+  let mapsService: MapsService;
+  let melhorEnvio: MelhorEnvioService;
+  let viaCep: ViaCepService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StoreService,
-        { provide: getModelToken('Store'), useValue: mockStoreModel },
-        { provide: MapsService, useValue: mockMapsService },
-        { provide: MelhorEnvioService, useValue: mockMelhorEnvio },
-        { provide: ViaCepService, useValue: mockViaCep },
+        { provide: getModelToken('Store'), useFactory: mockStoreModel },
+        { provide: MapsService, useFactory: mockMapsService },
+        { provide: MelhorEnvioService, useFactory: mockMelhorEnvioService },
+        { provide: ViaCepService, useFactory: mockViaCepService },
       ],
     }).compile();
 
     service = module.get<StoreService>(StoreService);
+    storeModel = module.get(getModelToken('Store'));
+    mapsService = module.get<MapsService>(MapsService);
+    melhorEnvio = module.get<MelhorEnvioService>(MelhorEnvioService);
+    viaCep = module.get<ViaCepService>(ViaCepService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  it('getAllStores - deve retornar todas as lojas', async () => {
+    const stores = [{ storeName: 'Loja A' }, { storeName: 'Loja B' }];
+    storeModel.find.mockResolvedValue(stores);
+
+    const result = await service.getAllStores();
+    expect(result).toEqual(stores);
   });
 
-  it('deve retornar loja com frete fixo para PDV a menos de 50km', async () => {
-    mockViaCep.getCoordinatesFromCep.mockResolvedValue({
-      latitude: -8.0,
-      longitude: -34.9,
-      postalCode: '50050-010',
-    });
+  it('getStoreById - deve retornar a loja se o ID for válido', async () => {
+    const mockStore = { _id: '123', storeName: 'Loja Teste' };
+    storeModel.findById.mockResolvedValue(mockStore);
 
-    mockStoreModel.find.mockResolvedValue([{
+    const result = await service.getStoreById('507f1f77bcf86cd799439011');
+    expect(result).toEqual(mockStore);
+  });
+
+  it('getStoreById - deve lançar erro se o ID for inválido', async () => {
+    await expect(service.getStoreById('invalido')).rejects.toThrow(BadRequestException);
+  });
+
+  it('getStoreById - deve lançar erro se loja não for encontrada', async () => {
+    storeModel.findById.mockResolvedValue(null);
+    await expect(service.getStoreById('507f1f77bcf86cd799439011')).rejects.toThrow(NotFoundException);
+  });
+
+  it('getStoresByState - deve retornar lojas pelo estado', async () => {
+    storeModel.find.mockResolvedValue([{ state: 'PE' }]);
+    const result = await service.getStoresByState('pe');
+    expect(result).toEqual([{ state: 'PE' }]);
+  });
+
+  it('getStoresByState - deve lançar erro para estado inválido', async () => {
+    await expect(service.getStoresByState('pernambuco')).rejects.toThrow(BadRequestException);
+  });
+
+  it('getStoresByState - deve lançar erro se nenhuma loja for encontrada', async () => {
+    storeModel.find.mockResolvedValue([]);
+    await expect(service.getStoresByState('SP')).rejects.toThrow(NotFoundException);
+  });
+
+  it('findByCep - deve retornar loja PDV se estiver dentro de 50km', async () => {
+    const cep = '50710-000';
+    const enderecoViaCep = {
+      logradouro: 'Rua Exemplo',
+      bairro: 'Boa Viagem',
+      localidade: 'Recife',
+      uf: 'PE',
+    };
+
+    const pdv = {
       storeID: 'PDV001',
-      latitude: -8.1,
-      longitude: -34.8,
+      storeName: 'PDV Recife',
       type: 'PDV',
-      postalCode: '50000-000',
-      storeName: 'PDV Teste',
+      address: 'Rua PDV',
       city: 'Recife',
-    }]);
+      state: 'PE',
+      postalCode: '50710000',
+    };
 
-    mockMapsService.getDistanceBetween.mockResolvedValue({ distanceInKm: 10 });
-    mockMelhorEnvio.getDeliveryTime.mockResolvedValue(2);
+    (viaCep.getAddressFromCep as jest.Mock).mockResolvedValue(enderecoViaCep);
+    storeModel.find.mockResolvedValue([pdv]);
+    // Mocked in the mockMapsService factory
+    (melhorEnvio.getDeliveryTime as jest.Mock).mockResolvedValue('2 dias úteis');
 
-    const response = await service.findByCep('50050-010');
-    logger.info('Resultado com PDV próximo: ', response);
+    const result = await service.findByCep(cep);
 
-    expect(response).toBeDefined();
-    expect(response![0]?.value?.[0]?.price).toBe('R$ 15,00');
-    expect(response![0]?.value?.[0]?.prazo).toBe('2 dias úteis');
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('PDV');
+    expect(result[0].value[0].price).toBe('R$ 15,00');
   });
 
-  it('deve retornar loja com frete do Melhor Envio para PDV distante', async () => {
-    mockViaCep.getCoordinatesFromCep.mockResolvedValue({
-      latitude: -8.0,
-      longitude: -34.9,
-      postalCode: '50050-010',
-    });
+  it('findByCep - deve retornar loja online com PAC e Sedex se estiver além de 50km', async () => {
+    const cep = '50710-000';
+    const enderecoViaCep = {
+      logradouro: 'Rua Exemplo',
+      bairro: 'Boa Viagem',
+      localidade: 'Recife',
+      uf: 'PE',
+    };
 
-    mockStoreModel.find.mockResolvedValue([{
-      storeID: 'PDV001',
-      latitude: -9.0,
-      longitude: -35.9,
+    const pdv = {
+      storeID: 'PDV002',
+      storeName: 'PDV São Paulo',
       type: 'PDV',
-      postalCode: '60000-000',
-      storeName: 'PDV Distante',
-      city: 'Maceió',
-    }]);
+      address: 'Rua Longe',
+      city: 'São Paulo',
+      state: 'SP',
+      postalCode: '01010000',
+    };
 
-    mockMapsService.getDistanceBetween.mockResolvedValue({ distanceInKm: 100 });
-
-    mockStoreModel.findOne.mockResolvedValueOnce({
-      storeID: 'LOJA001',
-      type: 'loja',
+    const loja = {
+      storeID: 'LOJA002',
       storeName: 'Loja Online',
-      city: 'Maceió',
-      postalCode: '60000-000',
-      associatedPDV: { storeID: 'PDV001' },
+      type: 'loja',
+      postalCode: '01010000',
+      city: 'São Paulo',
+    };
+
+    (viaCep.getAddressFromCep as jest.Mock).mockResolvedValue(enderecoViaCep);
+    storeModel.find.mockResolvedValue([pdv]);
+    (mapsService.getDistanceBetween as jest.Mock).mockResolvedValue({ distanceInKm: 120 });
+    storeModel.findOne.mockResolvedValueOnce(loja); // busca a loja associada
+    storeModel.findOne.mockResolvedValueOnce(pdv); // busca o PDV associado da loja
+    (melhorEnvio.getFreteFromLoja as jest.Mock).mockResolvedValue({
+      sedex: { price: 23.5, deliveryTime: 2 },
+      apac: { price: 19.9, deliveryTime: 4 },
     });
 
-    mockStoreModel.findOne.mockResolvedValueOnce({
-      storeID: 'PDV001',
-      type: 'PDV',
-      postalCode: '60000-000',
-    });
+    const result = await service.findByCep(cep);
 
-    mockMelhorEnvio.getFreteFromLoja.mockResolvedValue({
-      sedex: { price: 25.5, deliveryTime: 3 },
-      apac: { price: 20.0, deliveryTime: 5 },
-    });
-
-    const response = await service.findByCep('50050-010');
-    logger.info('Resultado com loja online por PDV distante: ', response);
-
-    expect(response).toBeDefined();
-    expect(response![0]?.value?.[1]?.description).toContain('PAC');
-    expect(response![0]?.value?.[1]?.price).toBe('R$ 20,00');
+    expect(result[0].type).toBe('LOJA');
+    expect(result[0].value).toHaveLength(2);
+    expect(result[0].value[0].description).toContain('Sedex');
   });
 
-  describe('getStoreById', () => {
-    it('deve retornar a loja encontrada', async () => {
-      const storeId = '507f191e810c19729de860ea';
-      const storeMock = { storeID: storeId, storeName: 'Loja Teste', type: 'PDV', city: 'Recife', postalCode: '50000000' };
-      mockStoreModel.findById.mockResolvedValue(storeMock);
-
-      const store = await service.getStoreById(storeId);
-
-      expect(store).toEqual(storeMock);
-      expect(mockStoreModel.findById).toHaveBeenCalledWith(storeId);
-    });
-
-    it('deve lançar BadRequestException se o ID não for válido', async () => {
-      const invalidId = 'invalidId';
-
-      await expect(service.getStoreById(invalidId)).rejects.toThrow(BadRequestException);
-      expect(mockStoreModel.findById).not.toHaveBeenCalled();
-    });
-
-    it('deve lançar NotFoundException se a loja não for encontrada', async () => {
-      const validId = '507f1f77bcf86cd799439011';
-      mockStoreModel.findById.mockResolvedValue(null);
-
-      await expect(service.getStoreById(validId)).rejects.toThrow(NotFoundException);
-      expect(mockStoreModel.findById).toHaveBeenCalledWith(validId);
-    });
-  });
-
-  describe('getStoresByState', () => {
-    beforeEach(() => {
-      mockStoreModel.find.mockImplementation((query) => {
-        if (query.state === 'ZZ') {
-          return { exec: () => Promise.resolve([]) };
-        }
-
-        if (query.state === 'PE') {
-          return {
-            exec: () =>
-              Promise.resolve([
-                { storeID: 'PDV001', storeName: 'Loja Recife', state: 'PE' },
-                { storeID: 'PDV002', storeName: 'Loja Olinda', state: 'PE' },
-              ]),
-          };
-        }
-
-        return { exec: () => Promise.resolve([]) };
-      });
-    });
-
-    it('deve lançar BadRequestException se o estado for inválido', async () => {
-      await expect(service.getStoresByState('')).rejects.toThrow(BadRequestException);
-      await expect(service.getStoresByState('X')).rejects.toThrow(BadRequestException);
-    });
-
-    it('deve lançar NotFoundException se nenhuma loja for encontrada para o estado', async () => {
-      await expect(service.getStoresByState('ZZ')).rejects.toThrow(NotFoundException);
-    });
-
-    it('deve retornar as lojas encontradas para o estado', async () => {
-      const result = await service.getStoresByState('PE');
-
-      expect(result).toEqual([
-        { storeID: 'PDV001', storeName: 'Loja Recife', state: 'PE' },
-        { storeID: 'PDV002', storeName: 'Loja Olinda', state: 'PE' },
-      ]);
-      expect(mockStoreModel.find).toHaveBeenCalledWith({ state: 'PE' });
-    });
+  it('findByCep - deve lançar erro se ViaCEP retornar inválido', async () => {
+    (viaCep.getAddressFromCep as jest.Mock).mockResolvedValue(null);
+    await expect(service.findByCep('50710-000')).rejects.toThrow(BadRequestException);
   });
 });
