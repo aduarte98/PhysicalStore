@@ -55,13 +55,103 @@ npm install
 
 # 4. Crie um arquivo .env com as variáveis necessárias
 cp .env.example .env
+```
 
-## Variáveis esperadas no .env
+### Variáveis esperadas no `.env`
 
+```env
 GOOGLE_API_KEY=sua_chave_google_maps
 MELHORENVIO_TOKEN=seu_token_melhor_envio
 BASE_URL=http://localhost:3000
+```
 
-## Para rodar o servidor em desenvolvimento:
+### Para rodar o servidor em desenvolvimento:
 
+```bash
 npm run start:dev
+```
+
+---
+
+## 🧪 Rodando os Testes
+
+```bash
+# Testes unitários
+npm run test
+
+# Cobertura de testes
+npm run test:cov
+```
+
+---
+
+## 📘 Documentação via Swagger
+
+Após iniciar o projeto, acesse a documentação interativa no navegador:
+
+```
+http://localhost:3000/api
+```
+
+---
+
+## 📬 Exemplos de Requisições
+
+### Buscar lojas próximas de um CEP
+
+```http
+GET /stores/50050-030
+```
+
+**Resposta esperada:**
+```json
+{
+  "tipoEntrega": "PDV",
+  "valor": 15,
+  "prazo": "2 dias úteis",
+  "loja": {
+    "storeID": "PDV001",
+    "nome": "PDV Recife",
+    "endereco": "Rua do Sol, Recife - PE"
+  }
+}
+```
+
+### Buscar frete via Correios
+
+```http
+GET /stores/99999-999
+```
+
+**Resposta esperada:**
+```json
+{
+  "tipoEntrega": "Correios",
+  "fretes": [
+    {
+      "servico": "PAC",
+      "valor": 24.9,
+      "prazo": "6 dias úteis"
+    },
+    {
+      "servico": "SEDEX",
+      "valor": 34.5,
+      "prazo": "3 dias úteis"
+    }
+  ],
+  "loja": {
+    "storeID": "LOJA001",
+    "nome": "Loja Online Recife",
+    "associada": "PDV001"
+  }
+}
+```
+
+---
+
+## 👨‍💻 Autor
+
+Feito com 💻 por **Arthur Duarte**
+
+📫 [aduarte98@outlook.com](mailto:aduarte98@outlook.com)  
+🔗 [github.com/aduarte98](https://github.com/aduarte98)
